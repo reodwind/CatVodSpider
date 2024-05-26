@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
 public class NCat extends Spider {
 
     private static final String siteUrl = "https://www.ncat3.com:51111";
-    private static final String picUrl = "https://vres.a357899.cn";
+    private static final String picUrl = "https://vres.miximixi.me";
     private static final String cateUrl = siteUrl + "/show/";
     private static final String detailUrl = siteUrl + "/detail/";
     private static final String searchUrl = siteUrl + "/search?k=";
