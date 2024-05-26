@@ -12,7 +12,7 @@ plugins {
 
 repositories {
     // Use Maven Central for resolving dependencies.
-    mavenCentral()
+    jcenter()
 }
 
 dependencies {
@@ -22,10 +22,10 @@ dependencies {
 
     // This dependency is used by the application.
     implementation libs.guava
-    implementation "org.jsoup:jsoup:1.14.1"
-    implementation "org.json:json:20180813"
-    implementation "com.squareup.okhttp3:okhttp:3.12.13"
-    implementation 'com.google.guava:guava:29.0-jre'
+    implementation "org.json:json:20240303"
+    implementation "org.jsoup:jsoup:1.15.3"
+    implementation 'com.google.code.gson:gson:2.8.6'
+    implementation 'com.squareup.okhttp3:okhttp:3.12.13'
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
@@ -37,5 +37,5 @@ java {
 
 application {
     // Define the main class for the application.
-    mainClass = 'org.example.App'
+    mainClass = 'com.github.catvod.dome.App'
 }
