@@ -1,0 +1,28 @@
+name: build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: set up JDK
+      uses: actions/setup-java@v3.11.0
+      with:
+        java-version: '18'
+        distribution: 'temurin'
+
+    - name: Build the Jar
+      run: |        
+         chmod +x gradlew
+         ./gradlew assemblerelease --build-cache --parallel --daemon --warning-mode all         
+         
+    - name: Upload APK
+      uses: actions/upload-artifact@v3.1.2
+      with:
+        name: Spider
+        path: ./jar/custom_spider.jar
