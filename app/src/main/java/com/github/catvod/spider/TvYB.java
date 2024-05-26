@@ -85,9 +85,7 @@ public class TvYB extends Spider {
             } catch (Exception e) {
             }
         }
-
-        Integer total = (Integer.parseInt(pg) + 1) * 20;
-        return Result.string(Integer.parseInt(pg), Integer.parseInt(pg) + 1, 20, total, list);
+        return Result.string(list);
     }
 
     @Override
