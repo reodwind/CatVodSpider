@@ -1,0 +1,11 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "App",
+            "request": "launch",
+            "mainClass": "org.example.App",
+            "projectName": "app"
+        }
+    ]
+}
