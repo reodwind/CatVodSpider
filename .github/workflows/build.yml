@@ -19,8 +19,11 @@ jobs:
     - name: Build the Jar
       run: |        
          chmod +x gradlew
-         ./gradlew assemblerelease --build-cache --parallel --daemon --warning-mode all         
-         
+         ./gradlew assemblerelease --build-cache --parallel --daemon --warning-mode all
+                  
+    - name: Setup ssh session
+        uses: Warpbuilds/action-debugger@v1.3
+
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
