@@ -81,6 +81,10 @@ public class Result {
         return Result.get().classes(classes).vod(list).string();
     }
 
+    public static String string(Integer page, Integer pagecount, Integer limit, Integer total, List<Vod> list) {
+        return Result.get().page(page, pagecount, limit, total).vod(list).string();
+    }
+
     public static String string(List<Vod> list) {
         return Result.get().vod(list).string();
     }
@@ -118,21 +122,26 @@ public class Result {
     }
 
     public Result filters(JSONObject object) {
-        if (object == null) return this;
-        Type listType = new TypeToken<LinkedHashMap<String, List<Filter>>>() {}.getType();
+        if (object == null)
+            return this;
+        Type listType = new TypeToken<LinkedHashMap<String, List<Filter>>>() {
+        }.getType();
         this.filters = new Gson().fromJson(object.toString(), listType);
         return this;
     }
 
     public Result filters(JsonElement element) {
-        if (element == null) return this;
-        Type listType = new TypeToken<LinkedHashMap<String, List<Filter>>>() {}.getType();
+        if (element == null)
+            return this;
+        Type listType = new TypeToken<LinkedHashMap<String, List<Filter>>>() {
+        }.getType();
         this.filters = new Gson().fromJson(element.toString(), listType);
         return this;
     }
 
     public Result header(Map<String, String> header) {
-        if (header.isEmpty()) return this;
+        if (header.isEmpty())
+            return this;
         this.header = new Gson().toJson(header);
         return this;
     }
