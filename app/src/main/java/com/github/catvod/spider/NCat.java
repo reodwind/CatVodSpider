@@ -55,6 +55,9 @@ public class NCat extends Spider {
                 String pic = element.select("img").attr("data-original");
                 String url = element.select("a").attr("href");
                 String name = element.select("img").attr("title");
+                if (name.isEmpty()){
+                    continue;
+                }
                 if (!pic.startsWith("http")) {
                     pic = picUrl + pic;
                 }
