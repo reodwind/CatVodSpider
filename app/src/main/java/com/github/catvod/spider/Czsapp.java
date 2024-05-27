@@ -11,6 +11,7 @@ import com.github.catvod.crawler.Spider;
 import com.github.catvod.crawler.SpiderDebug;
 
 import com.github.catvod.net.OkHttp;
+import com.github.catvod.utils.Util;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -39,7 +40,8 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 public class Czsapp extends Spider {
-    protected String siteurl = "https://www.czys.top/";
+    private static final String siteurl = "https://www.czys.top";
+    private static final String searchUrl = siteurl + "/daoyongjiekoshibushiyoubing?q=";
     private static final Pattern encryption = Pattern.compile(
             "\"([^\"]+)\";var [\\d\\w]+=function dncry.*md5.enc.Utf8.parse\\(\"([\\d\\w]+)\".*md5.enc.Utf8.parse\\(([\\d]+)\\)");
     private static final Pattern video = Pattern.compile("video: \\{url: \"([^\"]+)\"");
@@ -58,13 +60,11 @@ public class Czsapp extends Spider {
         if (TextUtils.isEmpty(extend)) {
             return;
         }
-        this.siteurl = extend;
     }
 
     protected static HashMap<String, String> getHeaders() {
         HashMap<String, String> hashMap = new HashMap<>();
-        hashMap.put("User-Agent",
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36");
+        hashMap.put("User-Agent",Util.CHROME);
         return hashMap;
     }
 
@@ -151,7 +151,7 @@ public class Czsapp extends Spider {
             vod.setVodRemarks(play.text());
         }
         vod.setVodPlayUrl(TextUtils.join("#", plays));
-        vod.setVodPlayFrom("厂长");
+        vod.setVodPlayFrom("厂长资源");
         vods.add(vod);
         return Result.string(vods);
     }
@@ -175,6 +175,23 @@ public class Czsapp extends Spider {
             playUrl = doc.select("div.videoplay >iframe").attr("src");
 
         return Result.get().url(playUrl).header(getHeaders()).string();
+    }
+
+    @Override
+    public String searchContent(String key, boolean quick) throws Exception {
+        List<Vod> list = new ArrayList<>();
+        Document doc = Jsoup.parse(OkHttp.string(searchUrl.concat(URLEncoder.encode(key)), getHeaders()));
+        for (Element search : doc.select("div.search_list > ul > li")) {
+            Matcher matcher = movie.matcher(search.select("a").attr("href"));
+            if (matcher.find()) {
+                String id = matcher.group(1);
+                String name = search.select("img").attr("alt").trim();
+                String pic = search.select("img").attr("data-original").trim();
+                String remarks = search.select("div.hdinfo > span").text().trim();
+                list.add(new Vod(id, name, pic, remarks));
+            }
+        }
+        return Result.string(list);
     }
 
     private static String AESCBC(String src, String KEY, String IV) {
