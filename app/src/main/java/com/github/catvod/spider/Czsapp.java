@@ -69,15 +69,14 @@ public class Czsapp extends Spider {
     }
 
     public String homeContent(boolean z) throws Exception {
-        JSONObject jSONObject = new JSONObject();
         List<Vod> list = new ArrayList<>();
         List<Class> classes = new ArrayList<>();
         Document doc = Jsoup.parse(OkHttp.string(siteurl, getHeaders()));
-        Elements jS = doc.select(".navlist > li > a");
-        for (Element next : jS) {
-            String pY2 = next.attr("href");
-            if (pY2.length() > 1) {
-                classes.add(new Class(pY2.substring(1), next.text().trim()));
+        Elements menus = doc.select(".submenu_mi > li > a");
+        for (Element menu : menus) {
+            String menuurl = menu.attr("href");
+            if (menuurl.length() > 1) {
+                classes.add(new Class(menuurl.substring(1), menu.text().trim()));
             }
         }
         Elements jS2 = doc.select("div.mi_ne_kd > ul > li");
@@ -152,7 +151,7 @@ public class Czsapp extends Spider {
             vod.setVodRemarks(play.text());
         }
         vod.setVodPlayUrl(TextUtils.join("#", plays));
-        vod.setVodPlayFrom("厂长资源");
+        vod.setVodPlayFrom("厂长");
         vods.add(vod);
         return Result.string(vods);
     }
@@ -163,15 +162,18 @@ public class Czsapp extends Spider {
 
         String html = OkHttp.string(siteurl + "/v_play/" + id + ".html", getHeaders());
         Document doc = Jsoup.parse(html);
-        Matcher matcher = encryption.matcher(html);       
+        Matcher matcher = encryption.matcher(html);
         if (matcher.find()) {
             String group = matcher.group(1);
             String KEY = matcher.group(2);
             String IV = matcher.group(3);
             String decode = AESCBC(group, KEY, IV);
             Matcher videomatch = video.matcher(decode);
-            playUrl = videomatch.find()?videomatch.group(1):"";
+            playUrl = videomatch.find() ? videomatch.group(1) : "";
         }
+        if (playUrl.isEmpty())
+            playUrl = doc.select("div.videoplay >iframe").attr("src");
+
         return Result.get().url(playUrl).header(getHeaders()).string();
     }
 
