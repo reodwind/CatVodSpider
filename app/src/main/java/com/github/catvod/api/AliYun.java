@@ -14,7 +14,6 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
-import com.github.catvod.BuildConfig;
 import com.github.catvod.bean.Result;
 import com.github.catvod.bean.Sub;
 import com.github.catvod.bean.Vod;
@@ -219,7 +218,7 @@ public class AliYun {
         JsonObject param = new JsonObject();
         param.addProperty("authorize", 1);
         param.addProperty("scope", "user:base,file:all:read,file:all:write");
-        String url = "https://open.aliyundrive.com/oauth/users/authorize?client_id=" + BuildConfig.CLIENT_ID + "&redirect_uri=https://alist.nn.ci/tool/aliyundrive/callback&scope=user:base,file:all:read,file:all:write&state=";
+        String url = "https://open.aliyundrive.com/oauth/users/authorize?client_id=76917ccccd4441c39457a04f6084fb2f&redirect_uri=https://alist.nn.ci/tool/aliyundrive/callback&scope=user:base,file:all:read,file:all:write&state=";
         String json = auth(url, param.toString(), true);
         return oauthRedirect(Code.objectFrom(json).getCode());
     }
@@ -508,7 +507,7 @@ public class AliYun {
         Map<String, String> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         List<String> keys = Arrays.asList("referer", "icy-metadata", "range", "connection", "accept-encoding", "user-agent");
         for (String key : params.keySet()) if (keys.contains(key)) headers.put(key, params.get(key));
-        return new Object[]{ProxyVideo.proxy(downloadUrl, headers)};
+        return ProxyVideo.proxy(downloadUrl, headers);
     }
 
     private String getM3u8Url(String shareId, String fileId, String templateId) {
@@ -546,11 +545,10 @@ public class AliYun {
         String fileId = params.get("fileId");
         String shareId = params.get("shareId");
         Response res = OkHttp.newCall(getDownloadUrl(shareId, fileId), getHeaderAuth());
-        byte[] body = Util.toUtf8(res.body().bytes());
         Object[] result = new Object[3];
         result[0] = 200;
         result[1] = "application/octet-stream";
-        result[2] = new ByteArrayInputStream(body);
+        result[2] = new ByteArrayInputStream(res.body().bytes());
         return result;
     }
 

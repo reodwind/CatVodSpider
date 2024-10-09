@@ -13,8 +13,6 @@ import android.webkit.WebViewClient;
 
 import com.github.catvod.spider.Init;
 
-import org.mozilla.universalchardet.UniversalDetector;
-
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.util.Arrays;
@@ -57,23 +55,12 @@ public class Util {
         return RULE.matcher(url).find();
     }
 
-    public static byte[] toUtf8(byte[] bytes) {
-        try {
-            UniversalDetector detector = new UniversalDetector(null);
-            detector.handleData(bytes, 0, bytes.length);
-            detector.dataEnd();
-            return new String(bytes, detector.getDetectedCharset()).getBytes("UTF-8");
-        } catch (Exception e) {
-            return bytes;
-        }
-    }
-
     public static boolean isSub(String ext) {
         return SUB.contains(ext);
     }
 
     public static boolean isMedia(String text) {
-        return MEDIA.contains(getExt(text));
+        return MEDIA.contains(getExt(text).toLowerCase());
     }
 
     public static String getExt(String name) {
