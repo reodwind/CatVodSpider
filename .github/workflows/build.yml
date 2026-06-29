@@ -1,0 +1,78 @@
+name: 自动构建
+
+on:
+  push:
+    branches: 
+      - "main"
+      - "android4.4"
+  pull_request:
+    branches:
+      - "main"
+      - "android4.4"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 拉取代码
+      uses: actions/checkout@v4
+
+    - name: 配置 Java 环境 (JDK 17)
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'zulu'
+        cache: 'gradle'
+
+    - name: 赋予 Gradle 执行权限并编译 APK
+      run: |
+        chmod +x gradlew
+        ./gradlew assembleRelease --no-daemon
+
+    - name: 执行 Jar 包重组逻辑 (Bash)
+      run: |
+        # 1. 定义变量路径
+        APK="app/build/outputs/apk/release/app-release-unsigned.apk"
+        WORK="jar/Smali_classes"
+        SPIDER="jar/spider.jar"
+        OUT="jar/custom_spider.jar"
+        MD5="jar/custom_spider.jar.md5"
+        APKTOOL="jar/3rd/apktool_2.11.0.jar"
+        
+        # 2. 清理旧缓存
+        rm -f "$OUT" "$MD5"
+        rm -rf "$WORK"
+        
+        # 3. 反编译刚生成的 APK
+        java -jar "$APKTOOL" d -f --only-main-classes "$APK" -o "$WORK"
+        
+        # 4. 清理旧模版目录并确保目标父目录存在
+        rm -rf "$SPIDER/smali/com/github/catvod/spider"
+        rm -rf "$SPIDER/smali/com/github/catvod/js"
+        mkdir -p "$SPIDER/smali/com/github/catvod"
+        
+        # 5. 将新抽取的 smali 核心类移动到模板中
+        mv "$WORK/smali/com/github/catvod/spider" "$SPIDER/smali/com/github/catvod/"
+        mv "$WORK/smali/com/github/catvod/js" "$SPIDER/smali/com/github/catvod/"
+        
+        # 6. 使用 Apktool 重新回编译 Jar
+        java -jar "$APKTOOL" b "$SPIDER" -c
+        
+        # 7. 提取出最终的 custom_spider.jar
+        mv "$SPIDER/dist/dex.jar" "$OUT"
+        
+        # 8. 计算 MD5 校验和并转为大写
+        md5sum "$OUT" | awk '{print toupper($1)}' > "$MD5"
+        
+        # 9. 清理临时生成的零碎文件
+        rm -rf "$SPIDER/build" "$SPIDER/smali" "$SPIDER/dist" "$WORK"
+
+    - name: 上传生成的构建产物
+      uses: actions/upload-artifact@v4
+      with:
+        name: custom_spider_jar-${{ github.ref_name }}
+        path: |
+          jar/custom_spider.jar
+          jar/custom_spider.jar.md5
