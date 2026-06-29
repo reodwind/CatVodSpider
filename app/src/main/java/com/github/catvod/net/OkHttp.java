@@ -114,7 +114,18 @@ public class OkHttp {
     }
 
     private static OkHttpClient.Builder getBuilder() {
-        return new OkHttpClient.Builder().dns(safeDns()).connectTimeout(TIMEOUT, TimeUnit.MILLISECONDS).readTimeout(TIMEOUT, TimeUnit.MILLISECONDS).writeTimeout(TIMEOUT, TimeUnit.MILLISECONDS).hostnameVerifier((hostname, session) -> true).sslSocketFactory(getSSLContext().getSocketFactory(), trustAllCertificates());
+        javax.net.ssl.SSLSocketFactory factory = getSSLContext().getSocketFactory();
+        try {
+            factory = new Tls12SocketFactory(factory);
+        } catch (Throwable ignored) {
+        }
+        return new OkHttpClient.Builder()
+                .dns(safeDns())
+                .connectTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+                .readTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+                .writeTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+                .hostnameVerifier((hostname, session) -> true)
+                .sslSocketFactory(factory, trustAllCertificates());
     }
 
     private static OkHttpClient client(long timeout) {
@@ -139,7 +150,12 @@ public class OkHttp {
 
     private static SSLContext getSSLContext() {
         try {
-            SSLContext context = SSLContext.getInstance("TLS");
+            SSLContext context;
+            try {
+                context = SSLContext.getInstance("TLSv1.2");
+            } catch (Throwable e) {
+                context = SSLContext.getInstance("TLS");
+            }
             context.init(null, new TrustManager[]{trustAllCertificates()}, new SecureRandom());
             return context;
         } catch (Throwable e) {
@@ -163,5 +179,55 @@ public class OkHttp {
                 return new X509Certificate[0];
             }
         };
+    }
+
+    private static class Tls12SocketFactory extends javax.net.ssl.SSLSocketFactory {
+        private final javax.net.ssl.SSLSocketFactory delegate;
+
+        public Tls12SocketFactory(javax.net.ssl.SSLSocketFactory delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public String[] getDefaultCipherSuites() {
+            return delegate.getDefaultCipherSuites();
+        }
+
+        @Override
+        public String[] getSupportedCipherSuites() {
+            return delegate.getSupportedCipherSuites();
+        }
+
+        private java.net.Socket patch(java.net.Socket socket) {
+            if (socket instanceof javax.net.ssl.SSLSocket) {
+                ((javax.net.ssl.SSLSocket) socket).setEnabledProtocols(new String[]{"TLSv1", "TLSv1.1", "TLSv1.2"});
+            }
+            return socket;
+        }
+
+        @Override
+        public java.net.Socket createSocket(java.net.Socket s, String host, int port, boolean autoClose) throws IOException {
+            return patch(delegate.createSocket(s, host, port, autoClose));
+        }
+
+        @Override
+        public java.net.Socket createSocket(String host, int port) throws IOException {
+            return patch(delegate.createSocket(host, port));
+        }
+
+        @Override
+        public java.net.Socket createSocket(String host, int port, java.net.InetAddress localHost, int localPort) throws IOException {
+            return patch(delegate.createSocket(host, port, localHost, localPort));
+        }
+
+        @Override
+        public java.net.Socket createSocket(java.net.InetAddress host, int port) throws IOException {
+            return patch(delegate.createSocket(host, port));
+        }
+
+        @Override
+        public java.net.Socket createSocket(java.net.InetAddress address, int port, java.net.InetAddress localAddress, int localPort) throws IOException {
+            return patch(delegate.createSocket(address, port, localAddress, localPort));
+        }
     }
 }
