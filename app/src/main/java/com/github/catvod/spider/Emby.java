@@ -69,17 +69,12 @@ public class Emby extends Spider {
         Map<String, String> headers = new HashMap<>();
         StringBuilder auth = new StringBuilder("Emby ");
 
-        auth.append("UserId=\"")
-            .append(staticUserId)
-            .append("\", Client=\"")
-            .append(com.github.catvod.utils.Util.getAppName())
-            .append("\", Device=\"")
-            .append(staticDeviceName)
-            .append("\", DeviceId=\"")
-            .append(staticDeviceId)
-            .append("\", Version=\"")
-            .append(com.github.catvod.utils.Util.getVersionName())
-            .append("\"");
+        auth.append("UserId=\"").append(staticUserId).append("\", ");
+
+        auth.append("Client=\"").append(com.github.catvod.utils.Util.getAppName()).append("\", ")
+            .append("Device=\"").append(staticDeviceName).append("\", ")
+            .append("DeviceId=\"").append(staticDeviceId).append("\", ")
+            .append("Version=\"").append(com.github.catvod.utils.Util.getVersionName()).append("\"");
 
         if (!TextUtils.isEmpty(staticApiKey)) {
             auth.append(", Token=\"").append(staticApiKey).append("\"");
