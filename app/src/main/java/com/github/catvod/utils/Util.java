@@ -3,6 +3,7 @@ package com.github.catvod.utils;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.pm.PackageManager;
 
 import com.github.catvod.spider.Init;
 
@@ -76,5 +77,23 @@ public class Util {
         ClipboardManager manager = (ClipboardManager) Init.context().getSystemService(Context.CLIPBOARD_SERVICE);
         manager.setPrimaryClip(ClipData.newPlainText("fongmi", text));
         Notify.show("已複製 " + text);
+    }
+
+    public static String getAppName() {
+        try {
+            Context context = Init.context();
+            return context.getApplicationInfo().loadLabel(context.getPackageManager()).toString();
+        } catch (Exception e) {
+            return "TVBox";
+        }
+    }
+
+    public static String getVersionName() {
+        try {
+            Context context = Init.context();
+            return context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionName;
+        } catch (Exception e) {
+            return "1.0.0";
+        }
     }
 }
