@@ -19,7 +19,10 @@ import java.util.List;
 
 public class Emby extends Spider {
     private String host;
-    private String apiKey;
+
+    private static String staticDeviceId = "";
+    private static String staticApiKey = "";
+    private static String staticUserId = "";
 
     @Override
     public void init(Context context, String extend) throws Exception {
@@ -28,17 +31,94 @@ public class Emby extends Spider {
         }
         JSONObject json = new JSONObject(extend);
         host = json.optString("url");
-        apiKey = json.optString("token");
         if (host.endsWith("/")) {
             host = host.substring(0, host.length() - 1);
+        }
+
+        if (TextUtils.isEmpty(staticDeviceId)) {
+            staticDeviceId = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
+            if (TextUtils.isEmpty(staticDeviceId)) {
+                staticDeviceId = "b687aa7a26d0ac85";
+            }
+        }
+        
+
+        String token = json.optString("token");
+        String username = json.optString("username");
+        String password = json.optString("password");
+
+        if (!TextUtils.isEmpty(token)) {
+            staticApiKey = token;
+            fetchDefaultUserId();
+        } else if (!TextUtils.isEmpty(username)) {
+            loginByPassword(username, password);
+        }
+    }
+
+    private Map<String, String> getHeaders() {
+        Map<String, String> headers = new HashMap<>();
+        StringBuilder auth = new StringBuilder("Emby ");
+
+        if (!TextUtils.isEmpty(staticUserId)) {
+            auth.append("UserId=\"").append(staticUserId).append("\", ");
+        }
+
+        auth.append("Client=\"Android\", Device=\"影视仓电视盒子\", DeviceId=\"")
+            .append(staticDeviceId)
+            .append("\", Version=\"1.0.0\"");
+
+        if (!TextUtils.isEmpty(staticApiKey)) {
+            auth.append(", Token=\"").append(staticApiKey).append("\"");
+        }
+
+        headers.put("X-Emby-Authorization", auth.toString());
+        return headers;
+    }
+
+    private void loginByPassword(String username, String password) {
+        try {
+            String url = host + "/emby/Users/AuthenticateByName";
+
+            JSONObject body = new JSONObject();
+            body.put("Username", username);
+            body.put("Password", password);
+            body.put("Pw", password);
+
+            String res = OkHttp.post(url, body.toString(), getHeaders()).getBody();
+            if (!TextUtils.isEmpty(res)) {
+                JSONObject obj = new JSONObject(res);
+                staticApiKey = obj.optString("AccessToken");
+
+                JSONObject userObj = obj.optJSONObject("User");
+                if (userObj != null) {
+                    staticUserId = userObj.optString("Id");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void fetchDefaultUserId() {
+        try {
+            String userUrl = host + "/emby/Users?api_key=" + staticApiKey;
+            String userRes = OkHttp.string(userUrl, getHeaders());
+            if (!TextUtils.isEmpty(userRes)) {
+                JSONArray userArray = new JSONArray(userRes);
+                if (userArray.length() > 0) {
+                    staticUserId = userArray.getJSONObject(0).optString("Id");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
     @Override
     public String homeContent(boolean filter) throws Exception {
         List<Class> classes = new ArrayList<>();
-        String url = host + "/emby/Library/VirtualFolders?api_key=" + apiKey;
-        String jsonStr = OkHttp.string(url);
+        String url = host + "/emby/Library/VirtualFolders?api_key=" + staticApiKey;
+        String jsonStr = OkHttp.string(url, getHeaders());
         if (TextUtils.isEmpty(jsonStr)) return Result.get().classes(classes).string();
         JSONArray array = new JSONArray(jsonStr);
         for (int i = 0; i < array.length(); i++) {
@@ -57,9 +137,9 @@ public class Emby extends Spider {
         int startIndex = (page - 1) * limit;
 
         String url = host + "/emby/Items?ParentId=" + tid + "&StartIndex=" + startIndex + "&Limit=" + limit 
-                + "&Fields=PrimaryImageAspectRatio,Overview&Recursive=true&IncludeItemTypes=Movie,Series&api_key=" + apiKey;
+                + "&Fields=PrimaryImageAspectRatio,Overview&Recursive=true&IncludeItemTypes=Movie,Series&api_key=" + staticApiKey;
         
-        String jsonStr = OkHttp.string(url);
+        String jsonStr = OkHttp.string(url, getHeaders());
         if (TextUtils.isEmpty(jsonStr)) return Result.get().string();
         
         JSONObject response = new JSONObject(jsonStr);
@@ -73,7 +153,7 @@ public class Emby extends Spider {
                 Vod vod = new Vod();
                 vod.setVodId(item.optString("Id") + "_" + type);
                 vod.setVodName(item.optString("Name"));
-                vod.setVodPic(host + "/emby/Items/" + item.optString("Id") + "/Images/Primary?api_key=" + apiKey);
+                vod.setVodPic(host + "/emby/Items/" + item.optString("Id") + "/Images/Primary?api_key=" + staticApiKey);
                 vod.setVodRemarks("Series".equals(type) ? "剧集" : "电影");
                 list.add(vod);
             }
@@ -90,8 +170,8 @@ public class Emby extends Spider {
         String id = parts[0];
         String type = parts.length > 1 ? parts[1] : "Movie";
 
-        String url = host + "/emby/Items?Ids=" + id + "&Fields=Overview,Genres&api_key=" + apiKey;
-        String jsonStr = OkHttp.string(url);
+        String url = host + "/emby/Items?Ids=" + id + "&Fields=Overview,Genres&api_key=" + staticApiKey;
+        String jsonStr = OkHttp.string(url, getHeaders());
         if (TextUtils.isEmpty(jsonStr)) return Result.get().string();
         
         JSONObject response = new JSONObject(jsonStr);
@@ -102,7 +182,7 @@ public class Emby extends Spider {
         Vod vod = new Vod();
         vod.setVodId(rawId);
         vod.setVodName(item.optString("Name"));
-        vod.setVodPic(host + "/emby/Items/" + id + "/Images/Primary?api_key=" + apiKey);
+        vod.setVodPic(host + "/emby/Items/" + id + "/Images/Primary?api_key=" + staticApiKey);
         vod.setVodContent(item.optString("Overview"));
 
         JSONArray genres = item.optJSONArray("Genres");
@@ -117,8 +197,8 @@ public class Emby extends Spider {
         vod.setVodPlayFrom("Emby私服");
 
         if ("Series".equals(type)) {
-            String epUrl = host + "/emby/Shows/" + id + "/Episodes?api_key=" + apiKey;
-            String epJsonStr = OkHttp.string(epUrl);
+            String epUrl = host + "/emby/Shows/" + id + "/Episodes?api_key=" + staticApiKey;
+            String epJsonStr = OkHttp.string(epUrl, getHeaders());
             if (!TextUtils.isEmpty(epJsonStr)) {
                 JSONObject epResponse = new JSONObject(epJsonStr);
                 JSONArray episodes = epResponse.optJSONArray("Items");
@@ -147,13 +227,24 @@ public class Emby extends Spider {
     public String playerContent(String flag, String id, List<String> vipFlags) throws Exception {
         String realUrl = "";
         try {
-            String pbUrl = host + "/emby/Items/" + id + "/PlaybackInfo?api_key=" + apiKey;
+            String pbUrl = host + "/emby/Items/" + id + "/PlaybackInfo?api_key=" + staticApiKey 
+                    + "&UserId=" + staticUserId + "&DeviceId=" + staticDeviceId;
             JSONObject reqBody = new JSONObject();
             reqBody.put("EnableDirectPlay", true);
             reqBody.put("EnableDirectStream", true);
             reqBody.put("EnableTranscoding", false); // 封杀转码行为
-            
-            String pbRes = OkHttp.post(pbUrl, reqBody.toString());
+
+            JSONObject deviceProfile = new JSONObject();
+            JSONArray directPlayProfiles = new JSONArray();
+            JSONObject videoProfile = new JSONObject();
+
+            videoProfile.put("Container", "mp4,mkv,m4v,mov,avi,flv,ts,m3u8,webm");
+            videoProfile.put("Type", "Video");
+            directPlayProfiles.put(videoProfile);
+            deviceProfile.put("DirectPlayProfiles", directPlayProfiles);
+            reqBody.put("DeviceProfile", deviceProfile);
+
+            String pbRes = OkHttp.post(pbUrl, reqBody.toString(), getHeaders()).getBody();
             if (!TextUtils.isEmpty(pbRes)) {
                 JSONObject pbJson = new JSONObject(pbRes);
                 JSONArray mediaSources = pbJson.optJSONArray("MediaSources");
@@ -170,7 +261,7 @@ public class Emby extends Spider {
         }
 
         if (TextUtils.isEmpty(realUrl)) {
-            realUrl = host + "/videos/" + id + "/original.mkv?api_key=" + apiKey;
+            realUrl = host + "/videos/" + id + "/original.mkv?api_key=" + staticApiKey;
         }
 
         try {
@@ -187,8 +278,8 @@ public class Emby extends Spider {
 
     @Override
     public String searchContent(String keyword, boolean quick) throws Exception {
-        String url = host + "/emby/Items?SearchTerm=" + Uri.encode(keyword) + "&IncludeItemTypes=Movie,Series&Recursive=true&Fields=PrimaryImageAspectRatio&api_key=" + apiKey;
-        String jsonStr = OkHttp.string(url);
+        String url = host + "/emby/Items?SearchTerm=" + Uri.encode(keyword) + "&IncludeItemTypes=Movie,Series&Recursive=true&Fields=PrimaryImageAspectRatio&api_key=" + staticApiKey;
+        String jsonStr = OkHttp.string(url, getHeaders());
         if (TextUtils.isEmpty(jsonStr)) return Result.get().string();
         
         JSONObject response = new JSONObject(jsonStr);
@@ -202,7 +293,7 @@ public class Emby extends Spider {
                 Vod vod = new Vod();
                 vod.setVodId(item.optString("Id") + "_" + type);
                 vod.setVodName(item.optString("Name"));
-                vod.setVodPic(host + "/emby/Items/" + item.optString("Id") + "/Images/Primary?api_key=" + apiKey);
+                vod.setVodPic(host + "/emby/Items/" + item.optString("Id") + "/Images/Primary?api_key=" + staticApiKey);
                 vod.setVodRemarks("Series".equals(type) ? "剧集" : "电影");
                 list.add(vod);
             }
