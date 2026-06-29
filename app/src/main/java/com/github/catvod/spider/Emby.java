@@ -73,7 +73,6 @@ public class Emby extends Spider {
             auth.append(", Token=\"").append(staticApiKey).append("\"");
         }
 
-        headers.put("X-Emby-Authorization", auth.toString());
         return headers;
     }
 
