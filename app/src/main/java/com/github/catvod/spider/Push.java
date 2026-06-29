@@ -27,12 +27,16 @@ public class Push extends Spider {
     @Override
     public String playerContent(String flag, String id, List<String> vipFlags) {
         if (id.contains("://") && id.contains("***")) id = id.replace("***", "#");
-        return switch (flag) {
-            case "直連" -> Result.get().url(id).subs(getSubs(id)).string();
-            case "解析" -> Result.get().parse().jx().url(id).string();
-            case "嗅探" -> Result.get().parse().url(id).string();
-            default -> Result.get().url(id).string();
-        };
+        switch (flag) {
+            case "直連":
+                return Result.get().url(id).subs(getSubs(id)).string();
+            case "解析":
+                return Result.get().parse().jx().url(id).string();
+            case "嗅探":
+                return Result.get().parse().url(id).string();
+            default:
+                return Result.get().url(id).string();
+        }
     }
 
     private Vod vod(String url) {
