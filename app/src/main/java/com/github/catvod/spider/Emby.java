@@ -71,7 +71,7 @@ public class Emby extends Spider {
 
         auth.append("UserId=\"").append(staticUserId).append("\", ");
 
-        auth.append("Client=\"").append(com.github.catvod.utils.Util.getAppName()).append("\", ")
+        auth.append("Client=\"").append("TvBox").append("\", ")
             .append("Device=\"").append(staticDeviceName).append("\", ")
             .append("DeviceId=\"").append(staticDeviceId).append("\", ")
             .append("Version=\"").append(com.github.catvod.utils.Util.getVersionName()).append("\"");
