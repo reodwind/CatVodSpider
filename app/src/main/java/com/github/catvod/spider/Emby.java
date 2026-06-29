@@ -2,6 +2,7 @@ package com.github.catvod.spider;
 
 import android.content.Context;
 import android.net.Uri;
+import android.os.Build;
 import android.provider.Settings;
 import android.text.TextUtils;
 
@@ -23,6 +24,7 @@ public class Emby extends Spider {
     private String host;
 
     private static String staticDeviceId = "";
+    private static String staticDeviceName = "";
     private static String staticApiKey = "";
     private static String staticUserId = "";
 
@@ -43,7 +45,13 @@ public class Emby extends Spider {
                 staticDeviceId = "b687aa7a26d0ac85";
             }
         }
-        
+
+        if (TextUtils.isEmpty(staticDeviceName)) {
+            staticDeviceName = Build.MODEL;
+            if (TextUtils.isEmpty(staticDeviceName)) {
+                staticDeviceName = "Android Device"; // 稳健性防空兜底
+            }
+        }        
 
         String token = json.optString("token");
         String username = json.optString("username");
@@ -61,11 +69,12 @@ public class Emby extends Spider {
         Map<String, String> headers = new HashMap<>();
         StringBuilder auth = new StringBuilder("Emby ");
 
-        if (!TextUtils.isEmpty(staticUserId)) {
-            auth.append("UserId=\"").append(staticUserId).append("\", ");
-        }
-
-        auth.append("Client=\"Android\", Device=\"影视仓电视盒子\", DeviceId=\"")
+        auth.append("UserId=\"")
+            .append(staticUserId)
+            .append("\", ")
+            .append("Client=\"Android\", Device=\"")
+            .append(staticDeviceName)
+            .append("\", DeviceId=\"")
             .append(staticDeviceId)
             .append("\", Version=\"1.0.0\"");
 
@@ -73,6 +82,7 @@ public class Emby extends Spider {
             auth.append(", Token=\"").append(staticApiKey).append("\"");
         }
 
+        headers.put("X-Emby-Authorization", auth.toString());
         return headers;
     }
 
@@ -119,7 +129,7 @@ public class Emby extends Spider {
     public String homeContent(boolean filter) throws Exception {
         List<Class> classes = new ArrayList<>();
         String url = host + "/emby/Library/VirtualFolders?api_key=" + staticApiKey;
-        String jsonStr = OkHttp.string(url);
+        String jsonStr = OkHttp.string(url, getHeaders());
         if (TextUtils.isEmpty(jsonStr)) return Result.get().classes(classes).string();
         JSONArray array = new JSONArray(jsonStr);
         for (int i = 0; i < array.length(); i++) {
