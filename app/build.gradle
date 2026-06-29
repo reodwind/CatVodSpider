@@ -33,6 +33,7 @@ android {
         resolutionStrategy {
             force "com.squareup.okhttp3:okhttp:${libs.versions.okhttp.get()}"
         }
+        exclude group: 'xpp3', module: 'xpp3'
     }
 }
 
