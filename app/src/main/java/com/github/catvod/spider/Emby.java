@@ -120,7 +120,7 @@ public class Emby extends Spider {
     public String homeContent(boolean filter) throws Exception {
         List<Class> classes = new ArrayList<>();
         String url = host + "/emby/Library/VirtualFolders?api_key=" + staticApiKey;
-        String jsonStr = OkHttp.string(url, getHeaders());
+        String jsonStr = OkHttp.string(url);
         if (TextUtils.isEmpty(jsonStr)) return Result.get().classes(classes).string();
         JSONArray array = new JSONArray(jsonStr);
         for (int i = 0; i < array.length(); i++) {
