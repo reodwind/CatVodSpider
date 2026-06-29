@@ -2,6 +2,7 @@ package com.github.catvod.spider;
 
 import android.content.Context;
 import android.net.Uri;
+import android.provider.Settings;
 import android.text.TextUtils;
 
 import com.github.catvod.bean.Class;
@@ -16,6 +17,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Emby extends Spider {
     private String host;
