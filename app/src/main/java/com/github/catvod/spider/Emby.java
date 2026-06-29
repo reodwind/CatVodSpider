@@ -71,12 +71,15 @@ public class Emby extends Spider {
 
         auth.append("UserId=\"")
             .append(staticUserId)
-            .append("\", ")
-            .append("Client=\"Android\", Device=\"")
+            .append("\", Client=\"")
+            .append(com.github.catvod.utils.Util.getAppName())
+            .append("\", Device=\"")
             .append(staticDeviceName)
             .append("\", DeviceId=\"")
             .append(staticDeviceId)
-            .append("\", Version=\"1.0.0\"");
+            .append("\", Version=\"")
+            .append(com.github.catvod.utils.Util.getVersionName())
+            .append("\"");
 
         if (!TextUtils.isEmpty(staticApiKey)) {
             auth.append(", Token=\"").append(staticApiKey).append("\"");
